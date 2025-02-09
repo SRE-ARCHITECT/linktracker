@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from '@supabase/supabase-js';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Index = () => {
   const [url, setUrl] = useState('');
@@ -11,11 +12,9 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Initialize Supabase client
+  // Initialize Supabase client with better error handling
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  // Only create the client if we have both URL and key
   const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
   const generateShortCode = () => {
@@ -25,6 +24,15 @@ const Index = () => {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+  };
+
+  const validateUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,10 +47,19 @@ const Index = () => {
       return;
     }
 
+    if (!validateUrl(url)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!supabase) {
       toast({
         title: "Error",
-        description: "Database connection not available",
+        description: "Database connection not available. Please check your Supabase configuration.",
         variant: "destructive"
       });
       return;
@@ -76,7 +93,7 @@ const Index = () => {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Failed to shorten the URL",
+        description: "Failed to shorten the URL. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -112,6 +129,14 @@ const Index = () => {
           </p>
         </div>
 
+        {!supabase && (
+          <Alert className="mb-6">
+            <AlertDescription>
+              Please configure your Supabase connection to use LinkTracker.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 backdrop-blur-lg backdrop-filter">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -121,12 +146,13 @@ const Index = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg"
+                disabled={!supabase}
               />
             </div>
             
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !supabase}
               className="w-full"
             >
               {isLoading ? "Shortening..." : "Shorten URL"}
