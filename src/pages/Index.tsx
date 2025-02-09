@@ -1,25 +1,17 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { createClient } from '@supabase/supabase-js';
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link2, Copy, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [url, setUrl] = useState('');
   const [shortUrl, setShortUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  const supabase = useMemo(() => {
-    if (!supabaseUrl || !supabaseAnonKey) return null;
-    return createClient(supabaseUrl, supabaseAnonKey);
-  }, [supabaseUrl, supabaseAnonKey]);
 
   const generateShortCode = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -37,15 +29,6 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!supabase) {
-      toast({
-        title: "Erro de Configuração",
-        description: "A conexão com o Supabase não está configurada corretamente.",
-        variant: "destructive"
-      });
-      return;
-    }
 
     if (!url.trim()) {
       toast({
@@ -117,8 +100,6 @@ const Index = () => {
     }
   };
 
-  const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
       <div className="max-w-2xl mx-auto">
@@ -132,15 +113,6 @@ const Index = () => {
           </p>
         </div>
 
-        {!isSupabaseConfigured && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Configure sua conexão com o Supabase para usar o LinkTracker.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 backdrop-blur-lg backdrop-filter border border-purple-100 dark:border-gray-700">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -150,13 +122,12 @@ const Index = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500"
-                disabled={!isSupabaseConfigured}
               />
             </div>
             
             <Button
               type="submit"
-              disabled={isLoading || !isSupabaseConfigured}
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
               {isLoading ? "Encurtando..." : "Encurtar URL"}
