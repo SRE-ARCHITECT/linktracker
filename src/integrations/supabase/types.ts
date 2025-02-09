@@ -9,29 +9,67 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      click_analytics: {
+        Row: {
+          city: string | null
+          clicked_at: string
+          country: string | null
+          id: string
+          ip_address: string | null
+          link_id: string
+          region: string | null
+          timezone: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          link_id: string
+          region?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          link_id?: string
+          region?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "click_analytics_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       links: {
         Row: {
-          click_count: number | null
           created_at: string
           id: string
           original_url: string
-          short_code: string
           updated_at: string
         }
         Insert: {
-          click_count?: number | null
           created_at?: string
           id?: string
           original_url: string
-          short_code: string
           updated_at?: string
         }
         Update: {
-          click_count?: number | null
           created_at?: string
           id?: string
           original_url?: string
-          short_code?: string
           updated_at?: string
         }
         Relationships: []

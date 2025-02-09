@@ -3,20 +3,14 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Link2, Copy, AlertCircle } from "lucide-react";
+import { Link2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [url, setUrl] = useState('');
-  const [shortUrl, setShortUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  const generateShortCode = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-  };
 
   const validateUrl = (url: string) => {
     try {
@@ -50,53 +44,32 @@ const Index = () => {
 
     try {
       setIsLoading(true);
-      const shortCode = generateShortCode();
       
-      const { error } = await supabase
-        .from('links')
-        .insert([
-          { 
-            original_url: url,
-            short_code: shortCode,
-            click_count: 0
-          }
-        ]);
+      // Get client IP
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const { ip } = await ipResponse.json();
 
-      if (error) throw error;
+      // Track click with geolocation
+      const response = await supabase.functions.invoke('track-click', {
+        body: { url, ip }
+      });
 
-      const newShortUrl = `${window.location.origin}/${shortCode}`;
-      setShortUrl(newShortUrl);
+      if (response.error) throw response.error;
       
       toast({
         title: "Sucesso!",
-        description: "Seu link foi encurtado",
+        description: "Clique registrado com sucesso",
       });
       
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Erro",
-        description: "Falha ao encurtar a URL. Tente novamente.",
+        description: "Falha ao registrar o clique. Tente novamente.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shortUrl);
-      toast({
-        title: "Copiado!",
-        description: "Link copiado para a área de transferência",
-      });
-    } catch (err) {
-      toast({
-        title: "Erro",
-        description: "Falha ao copiar o link",
-        variant: "destructive"
-      });
     }
   };
 
@@ -109,7 +82,7 @@ const Index = () => {
             LinkTracker
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Encurte seus links, acompanhe seus cliques
+            Monitore os cliques e a origem geográfica dos seus visitantes
           </p>
         </div>
 
@@ -118,7 +91,7 @@ const Index = () => {
             <div>
               <Input
                 type="url"
-                placeholder="Cole sua URL longa aqui..."
+                placeholder="Cole sua URL aqui..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500"
@@ -130,30 +103,9 @@ const Index = () => {
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
-              {isLoading ? "Encurtando..." : "Encurtar URL"}
+              {isLoading ? "Registrando..." : "Registrar Visita"}
             </Button>
           </form>
-
-          {shortUrl && (
-            <div className="mt-8 p-6 bg-purple-50 dark:bg-gray-700 rounded-xl border border-purple-100 dark:border-gray-600">
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Sua URL encurtada:</p>
-              <div className="flex items-center gap-3">
-                <Input
-                  readOnly
-                  value={shortUrl}
-                  className="flex-1 bg-white dark:bg-gray-800"
-                />
-                <Button
-                  onClick={copyToClipboard}
-                  variant="outline"
-                  className="flex items-center gap-2 hover:bg-purple-50 dark:hover:bg-gray-700"
-                >
-                  <Copy className="w-4 h-4" />
-                  Copiar
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
