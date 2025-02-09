@@ -11,10 +11,12 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL!,
-    import.meta.env.VITE_SUPABASE_ANON_KEY!
-  );
+  // Initialize Supabase client
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  // Only create the client if we have both URL and key
+  const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
   const generateShortCode = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -32,6 +34,15 @@ const Index = () => {
       toast({
         title: "Error",
         description: "Please enter a URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!supabase) {
+      toast({
+        title: "Error",
+        description: "Database connection not available",
         variant: "destructive"
       });
       return;
